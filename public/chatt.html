@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chat UI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========== STATUS BAR (optional simulation) ========== */
+    .status-bar {
+      height: 44px;
+      background: #000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ========== TOP BAR ========== */
+    .top-bar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: #000;
+      border-bottom: 1px solid #1a1a1a;
+      position: relative;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 12px;
+    }
+
+    .search-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      opacity: 0.9;
+    }
+
+    .title {
+      flex: 1;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      position: absolute;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
+      z-index: 2;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .plus-btn {
+      width: 32px;
+      height: 32px;
+      background: #fffc00;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .plus-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ========== CHAT LIST ========== */
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 80px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .chat-item:active {
+      background: #111;
+    }
+
+    .chat-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+
+    .chat-avatar.ring {
+      border: 2.5px solid #a020f0;
+      padding: 2px;
+    }
+
+    .chat-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-name .emoji {
+      margin-left: 4px;
+    }
+
+    .chat-status {
+      font-size: 13px;
+      color: #a0a0a0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chat-status.opened {
+      color: #00a0ff;
+    }
+
+    .chat-status.received {
+      color: #a0a0a0;
+    }
+
+    .chat-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+    }
+
+    .camera-icon {
+      width: 22px;
+      height: 22px;
+      opacity: 0.7;
+    }
+
+    .reply-btn {
+      background: #2a2a2a;
+      border-radius: 20px;
+      padding: 6px 12px 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .reply-btn img {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+    }
+
+    /* Floating compose button */
+    .compose-btn {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background: #fffc00;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 10;
+      cursor: pointer;
+    }
+
+    /* ========== BOTTOM TAB BAR ========== */
+    .bottom-bar {
+      height: 70px;
+      background: #000;
+      border-top: 1px solid #1a1a1a;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: env(safe-area-inset-bottom);
+      position: relative;
+      z-index: 5;
+    }
+
+    .tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #888;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      color: #fff;
+    }
+
+    .tab svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .badge {
+      position: absolute;
+      top: -4px;
+      right: -8px;
+      background: #ff3b30;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .top-bar .top-add-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #1a1a1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+}
+
+.top-bar .top-add-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+    /* Scrollbar hide */
+    .chat-list::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+    <!-- Top Bar -->
+  <div class="top-bar">
+    <button class="icon-btn top-add-btn" aria-label="Add">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    </button>
+  </div>
+
+  <!-- Chat List (dynamically filled) -->
+  <div class="chat-list" id="chatList"></div>
+
+
+  
+
+  <script>
+   
+    async function loadChats() {
+      try {
+        // const token = localStorage.getItem("token");
+        const res = await fetch("api/v1/users/me/contacts", {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(()=>({ message: "Unexpected response" }));
+          console.error("Failed to load chats:", err);
+          return;
+        }
+        const users = await res.json();
+        if (!Array.isArray(users)) return console.error("Unexpected response:", users);
+        const chats = users.map(u => ({ id: u._id, name: u.username, status: "new message" }));
+        renderChats(chats);
+      } catch (err) {
+        console.error("Failed to load chats", err);
+      }
+  }
+
+  loadChats();
+
+    
+    // RENDER FUNCTION
+    
+    function renderChats(data) {
+      const container = document.getElementById("chatList");
+      container.innerHTML = "";
+
+      data.forEach(chat => {
+        const item = document.createElement("div");
+        item.className = "chat-item";
+
+        // Avatar
+        const avatarClass = chat.hasRing ? "chat-avatar ring" : "chat-avatar";
+        
+        // Status styling
+        let statusClass = "chat-status";
+        if (chat.type === "opened") statusClass += " opened";
+        if (chat.type === "received") statusClass += " received";
+
+        // Status icon
+        let statusIcon = "";
+        if (chat.type === "snap") {
+          statusIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#a0a0a0"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
+        } else if (chat.type === "opened") {
+          statusIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#00a0ff"><path d="M8 5v14l11-7z"/></svg>`;
+        }
+
+        // Right side content
+        let rightContent = `
+          <svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        `;
+
+        if (chat.showReply) {
+          rightContent = `
+            <div class="reply-btn">
+              <img src="${chat.replyAvatar}" alt="">
+              Reply
+            </div>
+          `;
+        }
+
+        item.innerHTML = `
+          
+          <div class="chat-info">
+            <div class="chat-name">
+              ${chat.name}
+            </div>
+            <div class="${statusClass}">
+              ${statusIcon}
+              ${chat.status}
+            </div>
+          </div>`;
+
+        container.appendChild(item);
+      });
+    }
+
+    
+
+    
+  </script>
+</body>
+</html>
