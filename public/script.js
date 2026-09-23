@@ -28,6 +28,7 @@ signupBtn.addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
+      credentials: 'include'
     });
     const data = await res.json();
     if (res.ok) {
@@ -54,6 +55,7 @@ loginBtn.addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
+      credentials: 'include'
     });
     const data = await res.json();
     if (res.ok) {
@@ -70,7 +72,7 @@ loginBtn.addEventListener('click', async () => {
 });
 
 // chat functionality
-const socket = io('ws://localhost:3500')
+const socket = io();
 
 const activity = document.querySelector('.activity')
 const msgInput = document.querySelector('input')
@@ -109,3 +111,4 @@ socket.on("activity", (name) => {
         activity.textContent = ""
     }, 3000)
 })
+

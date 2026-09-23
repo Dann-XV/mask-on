@@ -1,24 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Websockets</title>
-    <link href="styles.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"
-        integrity="sha512-Xm9qbB6Pu06k3PUwPj785dyTl6oHxgsv9nHp7ej7nCpAqGZT3OZpsELuCYX05DdonFpTlBpXMOxjavIAIUwr0w=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script defer src="app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Chat</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
-    <form>
-        <input type="text" placeholder="Your message">
-        <button>Send</button>
-    </form>
-    <ul></ul>
-    <p class="activity"></p>
-</body>
+  <div class="phone">
+    <header class="chat-header">
+      <div class="header-name">username</div>
+    </header>
 
+    <main class="thread">
+      
+    </main>
+
+    <div class="composer">
+      <label class="input-wrap">
+        <input type="text" placeholder="Send a chat" />
+        <button type="submit" class="send-btn">send</button>
+      </label>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const contactId = params.get('userId');
+        const contactName = params.get('username') || 'Chat';
+
+        const header = document.querySelector('.header-name');
+        if (header) header.textContent = contactName;
+
+        const thread = document.querySelector('.thread');
+        const input = document.querySelector('.composer input');
+        const sendBtn = document.querySelector('.composer .send-btn');
+
+        if (!contactId) {
+            if (sendBtn) sendBtn.disabled = true;
+            if (input) input.placeholder = 'No contact selected';
+            return;
+        }
+
+        const socket = io();
+
+        socket.on('connect', () => console.log('socket connected'));
+        socket.on('connect_error', (err) => {
+            console.error('Socket connect error', err && err.message);
+            if (err && err.message === 'unauthorized') window.location.href = '/';
+        });
+
+        socket.on('private_message', (msg) => {
+            if (!msg) return;
+            if (msg.fromUserId === contactId || msg.toUserId === contactId) {
+            appendChatMessage(msg, false);
+            }
+        });
+
+        socket.on('private_message_error', (err) => {
+            console.error('private_message_error', err);
+        });
+
+        if (sendBtn) sendBtn.addEventListener('click', (e) => { e.preventDefault(); sendMessage(); });
+        if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+        function sendMessage() {
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+
+            const payload = { toUserId: contactId, content: text };
+
+            socket.emit('private_message', payload);
+
+            // optimistic echo
+            // appendChatMessage({ fromUserId: 'me', toUserId: contactId, content: text, timestamp: Date.now() }, true);
+            input.value = '';
+        }
+
+        function appendChatMessage(msg, isLocalEcho = false) {
+            if (!thread) return;
+            const wrap = document.createElement('div');
+            const incoming = !isLocalEcho && msg.fromUserId === contactId;
+            wrap.className = incoming ? 'message incoming' : 'message outgoing';
+
+            const who = incoming ? escapeText(contactName) : 'me';
+            const timeValue = msg.createdAt || msg.timestamp;
+            const time = timeValue ? new Date(timeValue).toLocaleTimeString() : '';
+            wrap.innerHTML = `
+            <div class="msg-meta"><strong>${who}</strong> <span class="msg-time">${time}</span></div>
+            <div class="msg-body">${escapeText(msg.content)}</div>
+            `;
+            thread.appendChild(wrap);
+            wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function escapeText(s) {
+            return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+        }
+    })();
+    </script>
+</body>
 </html>
