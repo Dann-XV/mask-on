@@ -38,3 +38,5 @@ const expressServer = app.listen(PORT, () => {
     console.log(`listening on port ${PORT}`)
 })
 const io = initChat(expressServer);
+
+// server works properly
