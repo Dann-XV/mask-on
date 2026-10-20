@@ -58,7 +58,7 @@ module.exports = function initChat(httpServer) {
             return socket.emit('private_message_error', { error: 'Invalid payload' });
             }
 
-            const sender = await User.findById(fromUserId).select('contacts').lean();
+            const sender = await User.findById(fromUserId).select('contacts username').lean();
             if (!sender) return socket.emit('private_message_error', { error: 'Sender not found' });
 
             const isContact = (sender.contacts || []).some(c => c.equals(toUserId));
@@ -78,6 +78,7 @@ module.exports = function initChat(httpServer) {
               conversationId,
               fromUserId,
               toUserId,
+              fromUsername: sender.username,
               content: msg.content,
               createdAt: msg.createdAt,
               status: msg.status

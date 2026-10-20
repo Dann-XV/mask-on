@@ -28,15 +28,16 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// User Authentication routes
 
 // sign up route
 router.post("/register", async (req, res) => {
   try {
     const { password } = req.body;
     
-    if (!password) {
-      return res.status(400).json({ error: "Password is required" });
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters",
+      });
     }
 
     // Generate unique username
@@ -83,22 +84,31 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id.toString(), username: user.username },
-      JWT_SECRET,
-      { expiresIn: '1hr' }
+      JWT_SECRET
     );
 
     // after creating `token`
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 1000 // 1 hour
+      sameSite: 'lax'
     });
 
     res.json({ username: user.username, token, message: "Login successful" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+
+  res.sendStatus(204);
 });
 
 // adding other users to contacts
@@ -143,21 +153,27 @@ router.get("/users/:username/contacts", async (req, res) => {
   res.json(user.contacts);
 });
 
+// get current user info
+router.get("/me", authenticateToken, async (req, res) => {
+  const user = await User.findById(req.user.userId)
+    .select("username")
+    .lean();
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  res.json({
+    userId: user._id.toString(),
+    username: user.username,
+  });
+});
+
 // users in your contact list
 router.get("/me/contacts", authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.userId).populate("contacts", "username").lean();
   res.json(user.contacts);
 });
 
-
-// all users
-router.get("/users", async (req, res) => {
-  try {
-    const users = await User.find({}, "username").lean();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 module.exports = router;
